@@ -1,0 +1,8 @@
+{
+  "name": "G-milla Co-Pilot",
+  "description": "Asistente de carretera inteligente con integración de Google Maps y Gemini.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}
