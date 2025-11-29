@@ -24,6 +24,7 @@ export interface AppSettings {
   showWeather: boolean;
   showCafes: boolean;
   gasBrands: string[]; // e.g. ['Repsol', 'BP'] or [] for all
+  apiKey?: string;
 }
 
 export const AVAILABLE_BRANDS = ['Repsol', 'BP', 'Cepsa', 'Galp', 'Shell', 'Avia'];
