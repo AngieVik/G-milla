@@ -4,31 +4,56 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>G-milla</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
             colors: {
-              gray: {
-                850: '#1f2937',
-                900: '#111827',
-                950: '#030712',
-              }
+              gray: { 850: '#1f2937', 900: '#111827', 950: '#030712' }
             },
             animation: {
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'grid-flow': 'gridMove 20s linear infinite',
+              'kitt-scanner': 'kitt 1s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              gridMove: {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(40px)' },
+              },
+              kitt: {
+                '0%': { transform: 'scaleX(0.5)', opacity: '0.5' },
+                '100%': { transform: 'scaleX(1.5)', opacity: '1' }
+              }
             }
           }
         }
       }
     </script>
     <style>
-      /* Hide scrollbar for cleaner UI */
-      ::-webkit-scrollbar {
-        width: 0px;
-        background: transparent;
+      /* Estilos para la Rejilla Retro Wave */
+      .retro-grid {
+        background-size: 40px 40px;
+        background-image:
+          linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+        transform-origin: top;
+        perspective: 500px;
       }
+      .retro-horizon {
+        background: linear-gradient(to bottom, rgba(3, 7, 18, 0) 0%, rgba(3, 7, 18, 1) 80%);
+      }
+      ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
   <script type="importmap">
 {
