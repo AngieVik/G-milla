@@ -1,33 +1,56 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AppSettings, Coordinates, CoPilotResponse } from "../types";
 
+// Helper para traducir grados a dirección humana
+const getCardinalDirection = (heading: number) => {
+  const directions = ['Norte', 'Noreste', 'Este', 'Sureste', 'Sur', 'Suroeste', 'Oeste', 'Noroeste'];
+  const index = Math.round(((heading %= 360) < 0 ? heading + 360 : heading) / 45) % 8;
+  return directions[index];
+};
+
 export const fetchCoPilotInfo = async (
   coords: Coordinates,
   settings: AppSettings
 ): Promise<CoPilotResponse> => {
 
-  // 1. Usar Key del usuario o del entorno
-  const apiKey = settings.apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key no configurada. Ve a ajustes.");
+  // 1. OBTENCIÓN DE LA CLAVE
+  const apiKey = settings.apiKey || import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("API Key no configurada.");
 
-  // 2. Inicializar cliente con esa Key
+  // 2. INICIALIZACIÓN
   const ai = new GoogleGenAI({ apiKey });
 
-  // 3. Prompt (Igual que antes)
+  // 3. CONTEXTO DE MOVIMIENTO (NUEVO)
+  let movementContext = "Vehículo detenido o sin datos de brújula.";
+  if (coords.heading !== null && coords.heading !== undefined && !isNaN(coords.heading)) {
+    const direction = getCardinalDirection(coords.heading);
+    movementContext = `VEHÍCULO EN MOVIMIENTO: Rumbo hacia el ${direction} (${coords.heading.toFixed(0)} grados).`;
+  }
+
+  // 4. PROMPT MEJORADO
   const brandsFilter = settings.gasBrands.length > 0 
     ? `FILTRO ESTRICTO: Solo marcas ${settings.gasBrands.join(', ')}.` 
     : "Marcas: Cualquiera.";
 
+  const interests = [];
+  if (settings.showCafes) interests.push("cafeterías de carretera y áreas de descanso");
+
+  const promptTools = [];
+  if (settings.showTraffic) promptTools.push("Consulta el estado del tráfico (DGT) en la vía actual.");
+  if (settings.showWeather) promptTools.push("Consulta alertas meteorológicas (AEMET) en la zona.");
+
   const userPrompt = `
     UBICACIÓN: Lat ${coords.latitude}, Long ${coords.longitude}.
-    PREFERENCIAS: ${brandsFilter}. ${settings.showCafes ? 'Buscar cafeterías.' : ''}
-    ${settings.showTraffic ? 'Verificar Tráfico DGT.' : ''}
-    ${settings.showWeather ? 'Verificar Clima AEMET.' : ''}
+    ${movementContext}
+    
+    PREFERENCIAS: ${brandsFilter}. ${interests.length > 0 ? 'Buscar también ' + interests.join(', ') : ''}
+    ${promptTools.join(' ')}
 
-    TAREA:
-    1. Busca con Google Maps las 2 mejores opciones EN RUTA (hacia adelante).
-    2. Reporta incidencias graves primero.
-    3. Devuelve JSON estricto.
+    TAREA CRÍTICA:
+    1. Usa Google Maps para buscar opciones que estén ADELANTE en mi sentido de la marcha.
+    2. DESCARTA lugares que ya he pasado o que están en sentido contrario de la autovía.
+    3. Si hay incidencias graves, repórtalas primero.
+    4. Devuelve JSON estricto.
   `;
 
   const schema = {
@@ -66,7 +89,7 @@ export const fetchCoPilotInfo = async (
         responseMimeType: "application/json",
         responseSchema: schema,
         tools: [{ googleMaps: {} }, { googleSearch: {} }],
-        systemInstruction: "Eres G-milla, copiloto de carretera."
+        systemInstruction: "Eres G-milla, un copiloto experto. Prioriza seguridad y dirección de ruta."
       }
     });
 
@@ -75,11 +98,20 @@ export const fetchCoPilotInfo = async (
     return JSON.parse(responseText) as CoPilotResponse;
 
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Service Error:", error);
+    const errStr = String(error);
+    if (errStr.includes("401") || errStr.includes("403") || errStr.includes("API key")) {
+        return {
+            spoken_text: "Error de clave API. Revísala en configuración.",
+            weather_summary: "Error Key",
+            traffic_summary: "Error Key",
+            nearest_stations: []
+        };
+    }
     return {
-      spoken_text: "Error de conexión o clave inválida.",
-      weather_summary: "Error",
-      traffic_summary: "Error",
+      spoken_text: "",
+      weather_summary: "--",
+      traffic_summary: "--",
       nearest_stations: []
     };
   }
