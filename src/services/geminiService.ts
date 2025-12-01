@@ -83,7 +83,7 @@ export const fetchCoPilotInfo = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp", 
+      model: "gemini-1.5-flash", 
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
       config: {
         responseMimeType: "application/json",
